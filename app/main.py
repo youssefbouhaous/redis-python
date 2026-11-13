@@ -10,8 +10,7 @@ def main():
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
     client_s, client_a = server_socket.accept()
     with client_s, client_s.makefile("r", encoding="utf-8") as stream:
-        for line in stream:
-            client_s.sendall(b"+PONG\r\n")
+        client_s.sendall(b"+PONG\r\n")
 
 
 if __name__ == "__main__":
