@@ -1,4 +1,5 @@
 import socket  # noqa: F401
+import sys
 
 
 def main():
@@ -9,7 +10,10 @@ def main():
     #
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
     client_s, client_a = server_socket.accept()
-    with client_s, client_s.makefile("r", encoding="utf-8") as stream:
+    while True:
+        data = client_s.recv(1024)
+        if not data:
+            sys.exit()
         client_s.sendall(b"+PONG\r\n")
 
 
