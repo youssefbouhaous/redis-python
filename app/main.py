@@ -8,7 +8,15 @@ def handler(client_s):
         data = client_s.recv(1024)
         if not data:
             return
-        client_s.sendall(b"+PONG\r\n")
+        line: str = data.decode("utf-8")
+        lines = line.split("\r\n")
+        command = lines[2].upper()
+
+        if command.startswith("PING"):
+            client_s.sendall(b"+PONG\r\n")
+        elif command.startswith("ECHO"):
+            msg = "$" + str(len(lines[4])) + "\r\n" + lines[4] + "\r\n"
+            client_s.sendall(msg.encode())
 
 
 def main():
