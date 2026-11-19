@@ -14,14 +14,18 @@ class Steam:
         self.ti = ti
         self.seq = seq
         for i in range(0, len(data), 2):
-            self.data[data[i]] = data[i + 1]
+            if not self.id in self.data:
+                self.data[self.id] = []
+            self.data[self.id].append((data[i], data[i + 1]))
 
     def add(self, data, ti, seq):
         self.seq = seq
         self.ti = ti
         self.id = str(ti) + "-" + str(seq)
         for i in range(0, len(data), 2):
-            self.data[data[i]] = data[i + 1]
+            if not self.id in self.data:
+                self.data[self.id] = []
+            self.data[self.id].append((data[i], data[i + 1]))
 
 
 def handler(client_s):
@@ -155,6 +159,29 @@ def handler(client_s):
                 msg = x[0]
                 msg: str = "$" + str(len(msg)) + "\r\n" + msg + "\r\n"
                 client_s.sendall(msg.encode())
+        elif command.startswith("XRANGE"):
+            key = lines[4]
+            l = lines[6]
+            r = lines[8]
+            if not key in d:
+                client_s.sendall("$-1\r\n".encode())
+            else:
+                s: Steam = d[key]
+                data = s.data
+                output = []
+                for x in data:
+                    if l <= x <= r:
+                        output.append((x, data[x]))
+                client_s.sendall(f"*{len(output)}\r\n".encode())
+                for x in output:
+                    len_x = len(x[1])
+                    client_s.sendall(f"*2\r\n${len(x[0])}\r\n{x[0]}\r\n".encode())
+                    client_s.sendall(f"*{len_x * 2}\r\n".encode())
+                    for y in x[1]:
+                        k = y[0]
+                        v = y[1]
+                        client_s.sendall(f"${len(k)}\r\n{k}\r\n".encode())
+                        client_s.sendall(f"${len(v)}\r\n{v}\r\n".encode())
         elif command.startswith("XADD"):
             key = lines[4]
             id = lines[6]
