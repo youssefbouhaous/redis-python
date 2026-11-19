@@ -103,6 +103,14 @@ def handler(client_s):
                 client_s.sendall(f"${len(w)}\r\n{w}\r\n".encode())
 
                 client_s.sendall(f"${len(p)}\r\n{p}\r\n".encode())
+        elif command.startswith("TYPE"):
+            w = lines[4]
+            if not w in d:
+                client_s.sendall("+none\r\n".encode())
+            else:
+                w = d[w][0]
+                if type(w) == str:
+                    client_s.sendall("+string\r\n".encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
