@@ -186,8 +186,8 @@ def handler(client_s):
                         client_s.sendall(f"${len(k)}\r\n{k}\r\n".encode())
                         client_s.sendall(f"${len(v)}\r\n{v}\r\n".encode())
         elif command.startswith("XREAD"):
-            key = lines[4]
-            l = lines[6]
+            key = lines[6]
+            l = lines[8]
 
             if not key in d:
                 client_s.sendall("$-1\r\n".encode())
