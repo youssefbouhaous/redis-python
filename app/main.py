@@ -33,7 +33,8 @@ def handler(client_s):
         elif command.startswith("RPUSH"):
             if not lines[4] in d:
                 d[lines[4]] = []
-            d[lines[4]].append(lines[6])
+            for i in range(6, len(lines), 2):
+                d[lines[4]].append(lines[i])
             msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
             client_s.sendall(msg.encode())
         elif command.startswith("GET"):
