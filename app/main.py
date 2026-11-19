@@ -198,6 +198,8 @@ def handler(client_s):
                 for x in data:
                     if l < x:
                         output.append((x, data[x]))
+                client_s.sendall(f"*1\r\n*2\r\n".encode())
+                client_s.sendall(f"${len(key)}\r\n{key}\r\n".encode())
                 client_s.sendall(f"*{len(output)}\r\n".encode())
                 for x in output:
                     len_x = len(x[1])
