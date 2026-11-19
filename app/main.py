@@ -23,30 +23,33 @@ def handler(client_s):
             msg = "$" + str(len(lines[4])) + "\r\n" + lines[4] + "\r\n"
             client_s.sendall(msg.encode())
         elif command.startswith("SET"):
-            t = 0
-            if len(lines) > 8:
-                if lines[8] == "EX":
-                    t += float(lines[10])
-                elif lines[8] == "PX":
-                    t += float(lines[10]) / 1000
-                d[lines[4]] = (lines[6], t + time.time())
-            else:
-                d[lines[4]] = (lines[6], None)
-            client_s.sendall(b"+OK\r\n")
+            with lock:
+                t = 0
+                if len(lines) > 8:
+                    if lines[8] == "EX":
+                        t += float(lines[10])
+                    elif lines[8] == "PX":
+                        t += float(lines[10]) / 1000
+                    d[lines[4]] = (lines[6], t + time.time())
+                else:
+                    d[lines[4]] = (lines[6], None)
+                client_s.sendall(b"+OK\r\n")
         elif command.startswith("RPUSH"):
-            if not lines[4] in d:
-                d[lines[4]] = []
-            for i in range(6, len(lines), 2):
-                d[lines[4]].append(lines[i])
-            msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
-            client_s.sendall(msg.encode())
+            with lock:
+                if not lines[4] in d:
+                    d[lines[4]] = []
+                for i in range(6, len(lines), 2):
+                    d[lines[4]].append(lines[i])
+                msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
+                client_s.sendall(msg.encode())
         elif command.startswith("LPUSH"):
-            if not lines[4] in d:
-                d[lines[4]] = []
-            for i in range(6, len(lines), 2):
-                d[lines[4]].insert(0, lines[i])
-            msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
-            client_s.sendall(msg.encode())
+            with lock:
+                if not lines[4] in d:
+                    d[lines[4]] = []
+                for i in range(6, len(lines), 2):
+                    d[lines[4]].insert(0, lines[i])
+                msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
+                client_s.sendall(msg.encode())
         elif command.startswith("LLEN"):
             w = lines[4]
             if not w in d:
@@ -54,21 +57,22 @@ def handler(client_s):
             else:
                 client_s.sendall(f":{len(d[w])}\r\n".encode())
         elif command.startswith("LPOP"):
-            if not lines[4] in d or len(d[lines[4]]) == 0:
-                client_s.sendall("$-1\r\n".encode())
-            else:
-                if len(lines) > 6:
-                    topop = int(lines[6])
-                    client_s.sendall(f"*{min(len(lines[4]), topop)}\r\n".encode())
-                    while topop > 0 and len(d[lines[4]]) > 0:
+            with lock:
+                if not lines[4] in d or len(d[lines[4]]) == 0:
+                    client_s.sendall("$-1\r\n".encode())
+                else:
+                    if len(lines) > 6:
+                        topop = int(lines[6])
+                        client_s.sendall(f"*{min(len(lines[4]), topop)}\r\n".encode())
+                        while topop > 0 and len(d[lines[4]]) > 0:
+                            x = d[lines[4]].pop(0)
+                            msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
+                            client_s.sendall(msg.encode())
+                            topop -= 1
+                    else:
                         x = d[lines[4]].pop(0)
                         msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
                         client_s.sendall(msg.encode())
-                        topop -= 1
-                else:
-                    x = d[lines[4]].pop(0)
-                    msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
-                    client_s.sendall(msg.encode())
         elif command.startswith("BLPOP"):
             w = lines[4]
             t = float(lines[6])
@@ -118,11 +122,8 @@ def handler(client_s):
 
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
-    # Uncomment the code below to pass the first stage
-    #
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
 
     while True:
