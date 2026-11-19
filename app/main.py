@@ -50,6 +50,13 @@ def handler(client_s):
                 client_s.sendall(":0\r\n".encode())
             else:
                 client_s.sendall(f":{len(d[w])}\r\n".encode())
+        elif command.startswith("LPOP"):
+            if not lines[4] in d or len(d[lines[4]]) == 0:
+                client_s.sendall("$-1\r\n".encode())
+            else:
+                x = d[lines[4]].pop(0)
+                msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
+                client_s.sendall(msg.encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
