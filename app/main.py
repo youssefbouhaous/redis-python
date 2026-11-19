@@ -80,6 +80,9 @@ def handler(client_s):
                 while t > time.time() and (not w in d or len(d[w]) == 0):
                     time.sleep(0.01)
             with lock:
+                if not w in d:
+                    client_s.sendall("*-1\r\n".encode())
+                    continue
                 le = len(d[w])
                 if le == 0:
                     client_s.sendall("*-1\r\n".encode())
