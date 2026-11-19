@@ -37,6 +37,13 @@ def handler(client_s):
                 d[lines[4]].append(lines[i])
             msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
             client_s.sendall(msg.encode())
+        elif command.startswith("LPUSH"):
+            if not lines[4] in d:
+                d[lines[4]] = []
+            for i in range(6, len(lines), 2):
+                d[lines[4]].insert(0, lines[i])
+            msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
+            client_s.sendall(msg.encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
