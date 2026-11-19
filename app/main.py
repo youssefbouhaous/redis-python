@@ -76,25 +76,33 @@ def handler(client_s):
         elif command.startswith("BLPOP"):
             w = lines[4]
             t = float(lines[6])
+            le = 0
+            p = None
             if t == 0:
-                while not w in d or len(d[w]) == 0:
+                while True:
+                    with lock:
+                        if w in d and len(d[w]) > 0:
+                            le = len(d[w])
+                            p = d[w].pop(0)
+                            break
                     time.sleep(0.01)
             else:
                 t += time.time()
-                while t > time.time() and (not w in d or len(d[w]) == 0):
+                while True:
+                    with lock:
+                        if w in d and len(d[w]) > 0:
+                            le = len(d[w])
+                            p = d[w].pop(0)
+                        elif t < time.time():
+                            break
                     time.sleep(0.01)
-            with lock:
-                if not w in d:
-                    client_s.sendall("*-1\r\n".encode())
-                    continue
-                le = len(d[w])
-                if le == 0:
-                    client_s.sendall("*-1\r\n".encode())
-                else:
-                    client_s.sendall(f"*{le + 1}\r\n".encode())
-                    client_s.sendall(f"${len(w)}\r\n{w}\r\n".encode())
-                    p = d[w].pop(0)
-                    client_s.sendall(f"${len(p)}\r\n{p}\r\n".encode())
+            if le == 0:
+                client_s.sendall("*-1\r\n".encode())
+            else:
+                client_s.sendall(f"*{le + 1}\r\n".encode())
+                client_s.sendall(f"${len(w)}\r\n{w}\r\n".encode())
+
+                client_s.sendall(f"${len(p)}\r\n{p}\r\n".encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
