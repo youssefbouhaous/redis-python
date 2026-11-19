@@ -39,11 +39,16 @@ def handler(client_s):
             client_s.sendall(msg.encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
-            l = int(lines[6])
-            r = int(lines[8])
             if not w in d:
                 client_s.sendall("*0\r\n".encode())
             else:
+                n = len(d[w])
+                l = int(lines[6])
+                r = int(lines[8])
+                if l < 0:
+                    l = max(n + l, 0)
+                if r < 0:
+                    r = max(r + n, 0)
                 client_s.sendall(f"*{len(d[w][l : r + 1])}\r\n".encode())
                 for x in d[w][l : r + 1]:
                     msg = f"${len(x)}\r\n" + x + "\r\n"
