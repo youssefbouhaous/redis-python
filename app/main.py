@@ -163,10 +163,13 @@ def handler(client_s):
             key = lines[4]
             l = lines[6]
             r = lines[8]
+
             if not key in d:
                 client_s.sendall("$-1\r\n".encode())
             else:
                 s: Steam = d[key]
+                if r == "+":
+                    r = s.id
                 data = s.data
                 output = []
                 for x in data:
