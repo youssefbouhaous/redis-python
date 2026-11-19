@@ -8,10 +8,9 @@ lock = threading.Lock()
 
 
 class Steam:
-    def __init__(self, id, data) -> None:
-        self.id = id
+    def __init__(self, ti, seq, data) -> None:
+        self.id = str(ti) + "-" + str(seq)
         self.data = {}
-        ti, seq = map(int, id.split("-"))
         self.ti = ti
         self.seq = seq
         for i in range(0, len(data), 2):
@@ -159,8 +158,9 @@ def handler(client_s):
         elif command.startswith("XADD"):
             key = lines[4]
             id = lines[6]
-            ti, seq = map(int, id.split("-"))
-            if ti == 0 and seq == 0:
+            ti, seq = id.split("-")
+            ti = int(ti)
+            if ti == 0 and seq == "0":
                 client_s.sendall(
                     "-ERR The ID specified in XADD must be greater than 0-0\r\n".encode()
                 )
@@ -170,15 +170,27 @@ def handler(client_s):
             for i in range(8, n, 2):
                 data.append(lines[i])
             if not key in d:
-                d[key] = Steam(id, data=data)
+                if seq == "*":
+                    if ti == 0:
+                        seq = 1
+                    elif ti > 0:
+                        seq = 0
+                d[key] = Steam(ti=ti, seq=seq, data=data)
             else:
                 s: Steam = d[key]
+                if seq == "*":
+                    if s.ti < ti:
+                        seq = 0
+                    else:
+                        seq = s.seq + 1
                 if ti < s.ti or (ti == s.ti and seq <= s.seq):
                     client_s.sendall(
                         "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n".encode()
                     )
                     continue
                 s.add(data=data, ti=ti, seq=seq)
+            s: Steam = d[key]
+            id = s.id
             client_s.sendall(f"${len(id)}\r\n{id}\r\n".encode())
 
 
