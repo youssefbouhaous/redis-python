@@ -54,9 +54,18 @@ def handler(client_s):
             if not lines[4] in d or len(d[lines[4]]) == 0:
                 client_s.sendall("$-1\r\n".encode())
             else:
-                x = d[lines[4]].pop(0)
-                msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
-                client_s.sendall(msg.encode())
+                if len(lines) > 6:
+                    topop = int(lines[6])
+                    client_s.sendall(f"*{min(len(lines[4]), topop)}\r\n".encode())
+                    while topop > 0 and len(d[lines[4]]) > 0:
+                        x = d[lines[4]].pop(0)
+                        msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
+                        client_s.sendall(msg.encode())
+                        topop -= 1
+                else:
+                    x = d[lines[4]].pop(0)
+                    msg: str = "$" + str(len(x)) + "\r\n" + x + "\r\n"
+                    client_s.sendall(msg.encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
