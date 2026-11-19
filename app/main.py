@@ -4,6 +4,7 @@ import threading
 
 
 def handler(client_s):
+    d = {}
     while True:
         data = client_s.recv(1024)
         if not data:
@@ -16,6 +17,13 @@ def handler(client_s):
             client_s.sendall(b"+PONG\r\n")
         elif command.startswith("ECHO"):
             msg = "$" + str(len(lines[4])) + "\r\n" + lines[4] + "\r\n"
+            client_s.sendall(msg.encode())
+        elif command.startswith("SET"):
+            d[lines[4]] = lines[6]
+            client_s.sendall(b"+OK\r\n")
+        elif command.startswith("GET"):
+            msg = d[lines[4]]
+            msg: str = "$" + str(len(msg)) + "\r\n" + msg + "\r\n"
             client_s.sendall(msg.encode())
 
 
