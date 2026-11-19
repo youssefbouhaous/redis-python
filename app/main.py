@@ -11,10 +11,16 @@ class Steam:
     def __init__(self, id, data) -> None:
         self.id = id
         self.data = {}
+        ti, seq = map(int, id.split("-"))
+        self.ti = ti
+        self.seq = seq
         for i in range(0, len(data), 2):
             self.data[data[i]] = data[i + 1]
 
-    def add(self, data):
+    def add(self, data, ti, seq):
+        self.seq = seq
+        self.ti = ti
+        self.id = str(ti) + "-" + str(seq)
         for i in range(0, len(data), 2):
             self.data[data[i]] = data[i + 1]
 
@@ -153,6 +159,12 @@ def handler(client_s):
         elif command.startswith("XADD"):
             key = lines[4]
             id = lines[6]
+            ti, seq = map(int, id.split("-"))
+            if ti == 0 and seq == 0:
+                client_s.sendall(
+                    "-ERR The ID specified in XADD must be greater than 0-0\r\n".encode()
+                )
+                continue
             n = len(lines)
             data = []
             for i in range(8, n, 2):
@@ -161,7 +173,12 @@ def handler(client_s):
                 d[key] = Steam(id, data=data)
             else:
                 s: Steam = d[key]
-                s.add(data=data)
+                if ti < s.ti or (ti == s.ti and seq <= s.seq):
+                    client_s.sendall(
+                        "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n".encode()
+                    )
+                    continue
+                s.add(data=data, ti=ti, seq=seq)
             client_s.sendall(f"${len(id)}\r\n{id}\r\n".encode())
 
 
