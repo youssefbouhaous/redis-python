@@ -30,6 +30,12 @@ def handler(client_s):
             else:
                 d[lines[4]] = (lines[6], None)
             client_s.sendall(b"+OK\r\n")
+        elif command.startswith("RPUSH"):
+            if not lines[4] in d:
+                d[lines[4]] = []
+            d[lines[4]].append(lines[6])
+            msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
+            client_s.sendall(msg.encode())
         elif command.startswith("GET"):
             x = d[lines[4]]
             if (not x[1] is None) and x[1] < time.time():
