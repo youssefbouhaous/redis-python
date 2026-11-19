@@ -44,6 +44,12 @@ def handler(client_s):
                 d[lines[4]].insert(0, lines[i])
             msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
             client_s.sendall(msg.encode())
+        elif command.startswith("LLEN"):
+            w = lines[4]
+            if not w in d:
+                client_s.sendall(":0\r\n".encode())
+            else:
+                client_s.sendall(f":{len(d[w])}\r\n".encode())
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
