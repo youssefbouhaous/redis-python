@@ -37,6 +37,17 @@ def handler(client_s):
                 d[lines[4]].append(lines[i])
             msg: str = ":" + str(len(d[lines[4]])) + "\r\n"
             client_s.sendall(msg.encode())
+        elif command.startswith("LRANGE"):
+            w = lines[4]
+            l = int(lines[6])
+            r = int(lines[8])
+            if not w in d:
+                client_s.sendall("*0\r\n".encode())
+            else:
+                client_s.sendall(f"*{len(d[w][l : r + 1])}\r\n".encode())
+                for x in d[w][l : r + 1]:
+                    msg = f"${len(x)}\r\n" + x + "\r\n"
+                    client_s.sendall(msg.encode())
         elif command.startswith("GET"):
             x = d[lines[4]]
             if (not x[1] is None) and x[1] < time.time():
