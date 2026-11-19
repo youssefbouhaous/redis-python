@@ -7,6 +7,18 @@ d = {}
 lock = threading.Lock()
 
 
+class Steam:
+    def __init__(self, id, data) -> None:
+        self.id = id
+        self.data = {}
+        for i in range(0, len(data), 2):
+            self.data[data[i]] = data[i + 1]
+
+    def add(self, data):
+        for i in range(0, len(data), 2):
+            self.data[data[i]] = data[i + 1]
+
+
 def handler(client_s):
 
     while True:
@@ -108,9 +120,12 @@ def handler(client_s):
             if not w in d:
                 client_s.sendall("+none\r\n".encode())
             else:
-                w = d[w][0]
-                if type(w) == str:
+                w = d[w]
+                if type(w) == Steam:
+                    client_s.sendall("+stream\r\n".encode())
+                elif type(w[0]) == str:
                     client_s.sendall("+string\r\n".encode())
+
         elif command.startswith("LRANGE"):
             w = lines[4]
             if not w in d:
@@ -135,6 +150,19 @@ def handler(client_s):
                 msg = x[0]
                 msg: str = "$" + str(len(msg)) + "\r\n" + msg + "\r\n"
                 client_s.sendall(msg.encode())
+        elif command.startswith("XADD"):
+            key = lines[4]
+            id = lines[6]
+            n = len(lines)
+            data = []
+            for i in range(8, n, 2):
+                data.append(lines[i])
+            if not key in d:
+                d[key] = Steam(id, data=data)
+            else:
+                s: Steam = d[key]
+                s.add(data=data)
+            client_s.sendall(f"${len(id)}\r\n{id}\r\n".encode())
 
 
 def main():
