@@ -1,6 +1,7 @@
-import socket  # noqa: F401
+import socket
 import sys
 import threading
+import time
 
 
 def handler(client_s):
@@ -19,12 +20,24 @@ def handler(client_s):
             msg = "$" + str(len(lines[4])) + "\r\n" + lines[4] + "\r\n"
             client_s.sendall(msg.encode())
         elif command.startswith("SET"):
-            d[lines[4]] = lines[6]
+            t = 0
+            if len(lines) > 8:
+                if lines[8] == "EX":
+                    t += float(lines[10])
+                elif lines[8] == "PX":
+                    t += float(lines[10]) / 1000
+                d[lines[4]] = (lines[6], t + time.time())
+            else:
+                d[lines[4]] = (lines[6], None)
             client_s.sendall(b"+OK\r\n")
         elif command.startswith("GET"):
-            msg = d[lines[4]]
-            msg: str = "$" + str(len(msg)) + "\r\n" + msg + "\r\n"
-            client_s.sendall(msg.encode())
+            x = d[lines[4]]
+            if (not x[1] is None) and x[1] < time.time():
+                client_s.sendall("$-1\r\n".encode())
+            else:
+                msg = x[0]
+                msg: str = "$" + str(len(msg)) + "\r\n" + msg + "\r\n"
+                client_s.sendall(msg.encode())
 
 
 def main():
