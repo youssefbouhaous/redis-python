@@ -158,8 +158,12 @@ def handler(client_s):
         elif command.startswith("XADD"):
             key = lines[4]
             id = lines[6]
-            ti, seq = id.split("-")
-            ti = int(ti)
+            if id == "*":
+                seq = 0
+                ti = round(time.time() * 1000)
+            else:
+                ti, seq = id.split("-")
+                ti = int(ti)
             if ti == 0 and seq == "0":
                 client_s.sendall(
                     "-ERR The ID specified in XADD must be greater than 0-0\r\n".encode()
