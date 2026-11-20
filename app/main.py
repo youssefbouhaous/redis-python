@@ -186,30 +186,43 @@ def handler(client_s):
                         client_s.sendall(f"${len(k)}\r\n{k}\r\n".encode())
                         client_s.sendall(f"${len(v)}\r\n{v}\r\n".encode())
         elif command.startswith("XREAD"):
-            key = lines[6]
-            l = lines[8]
-
-            if not key in d:
-                client_s.sendall("$-1\r\n".encode())
+            n = len(lines)
+            arr = lines[6:n:2]
+            keys = []
+            ls = []
+            for x in arr:
+                if x.isalpha():
+                    keys.append(x)
+                else:
+                    ls.append(x)
+            if len(keys) > 1:
+                client_s.sendall(f"*{len(keys)}\r\n".encode())
             else:
-                s: Steam = d[key]
-                data = s.data
-                output = []
-                for x in data:
-                    if l < x:
-                        output.append((x, data[x]))
-                client_s.sendall(f"*1\r\n*2\r\n".encode())
-                client_s.sendall(f"${len(key)}\r\n{key}\r\n".encode())
-                client_s.sendall(f"*{len(output)}\r\n".encode())
-                for x in output:
-                    len_x = len(x[1])
-                    client_s.sendall(f"*2\r\n${len(x[0])}\r\n{x[0]}\r\n".encode())
-                    client_s.sendall(f"*{len_x * 2}\r\n".encode())
-                    for y in x[1]:
-                        k = y[0]
-                        v = y[1]
-                        client_s.sendall(f"${len(k)}\r\n{k}\r\n".encode())
-                        client_s.sendall(f"${len(v)}\r\n{v}\r\n".encode())
+                client_s.sendall(f"*1\r\n".encode())
+            for i in range(len(keys)):
+                key = keys[i]
+                l = ls[i]
+                if not key in d:
+                    client_s.sendall("$-1\r\n".encode())
+                else:
+                    s: Steam = d[key]
+                    data = s.data
+                    output = []
+                    for x in data:
+                        if l < x:
+                            output.append((x, data[x]))
+                    client_s.sendall(f"*2\r\n".encode())
+                    client_s.sendall(f"${len(key)}\r\n{key}\r\n".encode())
+                    client_s.sendall(f"*{len(output)}\r\n".encode())
+                    for x in output:
+                        len_x = len(x[1])
+                        client_s.sendall(f"*2\r\n${len(x[0])}\r\n{x[0]}\r\n".encode())
+                        client_s.sendall(f"*{len_x * 2}\r\n".encode())
+                        for y in x[1]:
+                            k = y[0]
+                            v = y[1]
+                            client_s.sendall(f"${len(k)}\r\n{k}\r\n".encode())
+                            client_s.sendall(f"${len(v)}\r\n{v}\r\n".encode())
         elif command.startswith("XADD"):
             key = lines[4]
             id = lines[6]
